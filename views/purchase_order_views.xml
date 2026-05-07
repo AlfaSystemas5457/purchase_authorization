@@ -39,18 +39,18 @@
                     <button name="button_request_authorization"
                         type="object"
                         string="Solicitar Autorización"
-                        invisible="authorization_state != 'draft'"
+                        invisible="authorization_state != 'draft' or state == 'purchase'"
                         class="oe_highlight"/>
                     <button name="button_authorize"
                         type="object"
                         string="Autorizar"
-                        invisible="authorization_state != 'requested'"
+                        invisible="authorization_state != 'requested' or state == 'purchase'"
                         groups="purchase_authorization.group_purchase_authorization_manager"
                         class="oe_highlight"/>
                     <button name="button_reject"
                         type="object"
                         string="Rechazar"
-                        invisible="authorization_state != 'requested'"
+                        invisible="authorization_state != 'requested' or state == 'purchase'"
                         groups="purchase_authorization.group_purchase_authorization_manager"
                         class="oe_stat_button"/>
                 </xpath>
