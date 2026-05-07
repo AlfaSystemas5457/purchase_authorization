@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="purchase_authorization_reject_wizard_form"
+        model="ir.ui.view">
+        <field name="name">purchase.authorization.reject.wizard.form</field>
+        <field name="model">purchase.authorization.reject.wizard</field>
+        <field name="arch"
+            type="xml">
+            <form string="Rechazar Autorización">
+                <group>
+                    <field name="order_id"
+                        invisible="1"/>
+                    <field name="rejection_reason"
+                        placeholder="Explique por qué se rechazó la orden de compra..."
+                        widget="html"/>
+                </group>
+                <footer>
+                    <button name="action_reject"
+                        string="Confirmar Rechazo"
+                        type="object"
+                        class="btn-danger"/>
+                    <button string="Cancelar"
+                        class="btn-secondary"
+                        special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

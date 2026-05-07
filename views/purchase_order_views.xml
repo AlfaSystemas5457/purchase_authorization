@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="purchase_order_form_inherit_authorization"
+            model="ir.ui.view">
+            <field name="name">purchase.order.authorization.form.inherit</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id"
+                ref="purchase.purchase_order_form"/>
+            <field name="arch"
+                type="xml">
+                <xpath expr="//header/button[@name='button_confirm']"
+                    position="attributes">
+                    <attribute name="invisible">authorization_state in ['requested', 'rejected'] or state != 'sent'</attribute>
+                </xpath>
+
+                <xpath expr="//header/button[@name='button_confirm'][2]"
+                    position="attributes">
+                    <attribute name="invisible">authorization_state in ['requested', 'rejected'] or state != 'draft'</attribute>
+                </xpath>
+
+                <xpath expr="//header/button[@name='action_rfq_send']"
+                    position="attributes">
+                    <attribute name="invisible">authorization_state in ['requested', 'rejected'] or state != 'draft'</attribute>
+                </xpath>
+
+                <xpath expr="//header/button[@name='action_rfq_send'][2]"
+                    position="attributes">
+                    <attribute name="invisible">authorization_state in ['requested', 'rejected'] or state != 'sent'</attribute>
+                </xpath>
+
+                <xpath expr="//header/button[@name='action_rfq_send'][3]"
+                    position="attributes">
+                    <attribute name="invisible">authorization_state in ['requested', 'rejected'] or state != 'purchase'</attribute>
+                </xpath>
+
+                <xpath expr="//header/button[@name='action_rfq_send']"
+                    position="before">
+                    <button name="button_request_authorization"
+                        type="object"
+                        string="Solicitar Autorización"
+                        invisible="authorization_state != 'draft'"
+                        class="oe_highlight"/>
+                    <button name="button_authorize"
+                        type="object"
+                        string="Autorizar"
+                        invisible="authorization_state != 'requested'"
+                        groups="purchase_authorization.group_purchase_authorization_manager"
+                        class="oe_highlight"/>
+                    <button name="button_reject"
+                        type="object"
+                        string="Rechazar"
+                        invisible="authorization_state != 'requested'"
+                        groups="purchase_authorization.group_purchase_authorization_manager"
+                        class="oe_stat_button"/>
+                </xpath>
+
+                <xpath expr="//notebook"
+                    position="inside">
+                    <page string="Autorización"
+                        name="authorization_page">
+                        <group string="Información de Autorización">
+                            <group>
+                                <field name="authorization_state"
+                                    widget="badge"/>
+                                <field name="authorization_requested_by"/>
+                            </group>
+                            <group>
+                                <field name="authorization_date"/>
+                                <field name="authorized_by"/>
+                            </group>
+                        </group>
+                        <group string="Motivo de Rechazo"
+                            invisible="not rejection_reason"
+                            col="1">
+
+                            <field name="rejection_reason"
+                                nolabel="1"
+                                widget="html"
+                                colspan="2"
+                                class="oe_inline"/>
+
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="purchase_order_tree_inherit_authorization"
+            model="ir.ui.view">
+            <field name="name">purchase.order.authorization.tree.inherit</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id"
+                ref="purchase.purchase_order_tree"/>
+            <field name="arch"
+                type="xml">
+                <field name="date_order"
+                    position="after">
+                    <field name="authorization_state"
+                        optional="show"/>
+                </field>
+            </field>
+        </record>
+    </data>
+</odoo>

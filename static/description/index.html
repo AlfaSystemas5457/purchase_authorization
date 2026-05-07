@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body>
+
+    <h1>Autorización de Compras</h1>
+    <p>Módulo para Odoo 19.0 que agrega un flujo de autorización a las órdenes de compra (OC). Permite solicitar aprobación a usuarios específicos antes de confirmar una orden, con notificaciones mediante actividades y el chatter de Odoo.</p>
+
+    <hr>
+
+    <h2>1. Campo en Usuarios (<code>res.users</code>)</h2>
+    <p>Se agrega el campo booleano <b>"Puede Autorizar Compras"</b> en la pestaña <i>Derechos de Acceso</i> del formulario de usuario.</p>
+    <ul>
+        <li>Solo los usuarios con este check activado recibirán las solicitudes de autorización.</li>
+        <li>Al activar el check, el usuario se agrega automáticamente al grupo <i>Gestor de Autorización</i>.</li>
+        <li>Al desactivarlo, se remueve del grupo automáticamente.</li>
+    </ul>
+
+    <h2>2. Flujo de Autorización en Órdenes de Compra</h2>
+    <p>El módulo agrega los siguientes campos al modelo <code>purchase.order</code>:</p>
+    <table border="1" cellpadding="5" style="border-collapse:collapse;">
+        <tr>
+            <th>Campo</th>
+            <th>Tipo</th>
+            <th>Descripción</th>
+        </tr>
+        <tr>
+            <td><code>authorization_state</code></td>
+            <td>Selección</td>
+            <td>Estado actual: Borrador / Autorización Solicitada / Autorizado / Rechazado</td>
+        </tr>
+        <tr>
+            <td><code>authorization_requested_by</code></td>
+            <td>Many2one (Usuario)</td>
+            <td>Quién solicitó la autorización</td>
+        </tr>
+        <tr>
+            <td><code>authorization_date</code></td>
+            <td>Datetime</td>
+            <td>Fecha en que se autorizó</td>
+        </tr>
+        <tr>
+            <td><code>authorized_by</code></td>
+            <td>Many2one (Usuario)</td>
+            <td>Quién autorizó o rechazó</td>
+        </tr>
+        <tr>
+            <td><code>rejection_reason</code></td>
+            <td>HTML</td>
+            <td>Motivo de rechazo (si aplica)</td>
+        </tr>
+    </table>
+
+    <h3>Botones en el Header</h3>
+    <ul>
+        <li><b>Solicitar Autorización</b> — Visible cuando la OC está en estado <i>Borrador</i>. Cambia el estado a <i>Autorización Solicitada</i>.</li>
+        <li><b>Autorizar</b> — Visible solo para usuarios del grupo <i>Gestor de Autorización</i> cuando el estado es <i>Autorización Solicitada</i>. Aprueba la orden, marca las actividades como hechas y confirma la OC automáticamente.</li>
+        <li><b>Rechazar</b> — Visible solo para usuarios del grupo <i>Gestor de Autorización</i> cuando el estado es <i>Autorización Solicitada</i>. Abre un asistente para ingresar el motivo y rechaza la orden.</li>
+    </ul>
+
+    <h3>Comportamiento de Botones Nativos</h3>
+    <p>Cuando una orden tiene autorización solicitada o está rechazada, los botones nativos de Odoo (<i>Confirmar</i>, <i>Enviar por Email</i>, etc.) se ocultan automáticamente para evitar acciones manuales durante el flujo de autorización.</p>
+
+    <h2>3. Notificaciones</h2>
+    <p><b>Al solicitar autorización:</b></p>
+    <ol>
+        <li>Se crea una <b>Actividad</b> (Tarea pendiente) para cada usuario autorizador, visible en el menú <i>Actividades</i>.</li>
+        <li>Se envía una <b>notificación por chatter</b> a los autorizadores, que también se entrega por email según la configuración de preferencias de cada usuario.</li>
+    </ol>
+    <p><b>Al autorizar:</b></p>
+    <ol>
+        <li>Las actividades pendientes se marcan como <i>Hechas</i>.</li>
+        <li>Se registra una notificación en el chatter de la OC.</li>
+    </ol>
+    <p><b>Al rechazar:</b></p>
+    <ol>
+        <li>Las actividades pendientes se marcan como <i>Hechas</i>.</li>
+        <li>Se notifica al usuario que solicitó la autorización con el motivo de rechazo.</li>
+    </ol>
+
+    <h2>4. Pestaña de Autorización</h2>
+    <p>En el formulario de la OC se agrega una pestaña <b>"Autorización"</b> que muestra:</p>
+    <ul>
+        <li>Estado actual (con badge)</li>
+        <li>Quién solicitó</li>
+        <li>Fecha de autorización</li>
+        <li>Quién autorizó/rechazó</li>
+        <li>Motivo de rechazo (solo visible si existe)</li>
+    </ul>
+
+    <h2>5. Vista de Lista</h2>
+    <p>En la vista de árbol de órdenes de compra se agrega la columna <b>"Estado de Autorización"</b> para visualizar rápidamente el estado de cada orden.</p>
+
+    <hr>
+
+    <h2>Seguridad</h2>
+    <table border="1" cellpadding="5" style="border-collapse:collapse;">
+        <tr>
+            <th>Grupo</th>
+            <th>Descripción</th>
+        </tr>
+        <tr>
+            <td>Categoría <i>Autorización de Compras</i></td>
+            <td>Categoría del módulo</td>
+        </tr>
+        <tr>
+            <td><i>Gestor de Autorización</i></td>
+            <td>Usuarios que pueden ver y usar los botones <i>Autorizar</i> y <i>Rechazar</i></td>
+        </tr>
+    </table>
+    <p>El grupo <i>Gestor de Autorización</i> se asigna/remueve automáticamente al activar/desactivar el campo <i>Puede Autorizar Compras</i> en el usuario.</p>
+
+    <hr>
+
+    <h2>Dependencias</h2>
+    <ul>
+        <li><code>purchase</code> — Módulo base de compras</li>
+        <li><code>mail</code> — Sistema de notificaciones y actividades</li>
+    </ul>
+
+    <hr>
+
+    <h2>Flujo Completo</h2>
+    <pre>
+1. OC en Borrador
+       │
+       ▼
+2. Usuario da click en "Solicitar Autorización"
+       │
+       ▼
+3. Estado → "Autorización Solicitada"
+   Actividades creadas para autorizadores
+   Notificación enviada
+       │
+       ├─────────────────────────────┐
+       ▼                             ▼
+4. Autorizar                    Rechazar
+       │                             │
+       ▼                             ▼
+   Estado → "Autorizado"         Estado → "Rechazado"
+   Actividades → Hechas          Actividades → Hechas
+   OC → Confirmada               Se notifica al solicitante
+    </pre>
+
+    <hr>
+
+    <h2>Autor</h2>
+    <p>DGV</p>
+
+</body>
+</html>
