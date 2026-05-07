@@ -31,5 +31,5 @@ class ResUsers(models.Model):
         )
         for user in users:
             if user.can_authorize_purchase:
-                user.sudo().write({"groups_id": [(4, group.id)]})
+                user.sudo().write({"group_ids": [(4, group.id)]})
         return users
