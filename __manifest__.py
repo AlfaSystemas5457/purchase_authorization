@@ -4,6 +4,7 @@
     "description": "Agrega un botón para pedir la autorizacion en el modulo de compras.",
     "summary": "Agrega un botón para pedir la autorizacion en el modulo de compras.",
     "author": "DGV",
+    "website": "https://github.com/AlfaSystemas5457/purchase_authorization",
     "license": "LGPL-3",
     "category": "Purchase",
     "depends": ["purchase", "mail"],
