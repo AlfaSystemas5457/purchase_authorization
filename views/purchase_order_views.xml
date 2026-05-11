@@ -11,27 +11,27 @@
                 type="xml">
                 <xpath expr="//header/button[@name='button_confirm']"
                     position="attributes">
-                    <attribute name="invisible">authorization_state in ['requested', 'rejected'] or state != 'sent'</attribute>
+                    <attribute name="invisible">state not in ('sent', 'approved')</attribute>
                 </xpath>
 
                 <xpath expr="//header/button[@name='button_confirm'][2]"
                     position="attributes">
-                    <attribute name="invisible">authorization_state in ['requested', 'rejected'] or state != 'draft'</attribute>
+                    <attribute name="invisible">state != 'draft'</attribute>
                 </xpath>
 
                 <xpath expr="//header/button[@name='action_rfq_send']"
                     position="attributes">
-                    <attribute name="invisible">authorization_state in ['requested', 'rejected'] or state != 'draft'</attribute>
+                    <attribute name="invisible">state not in ('draft', 'authorized')</attribute>
                 </xpath>
 
                 <xpath expr="//header/button[@name='action_rfq_send'][2]"
                     position="attributes">
-                    <attribute name="invisible">authorization_state in ['requested', 'rejected'] or state != 'sent'</attribute>
+                    <attribute name="invisible">state not in ('sent', 'authorized')</attribute>
                 </xpath>
 
                 <xpath expr="//header/button[@name='action_rfq_send'][3]"
                     position="attributes">
-                    <attribute name="invisible">authorization_state in ['requested', 'rejected'] or state != 'purchase'</attribute>
+                    <attribute name="invisible">state not in ('purchase', 'authorized')</attribute>
                 </xpath>
 
                 <xpath expr="//header/button[@name='action_rfq_send']"
@@ -39,20 +39,24 @@
                     <button name="button_request_authorization"
                         type="object"
                         string="Solicitar Autorización"
-                        invisible="authorization_state != 'draft' or state == 'purchase'"
+                        invisible="state != 'draft'"
                         class="oe_highlight"/>
                     <button name="button_authorize"
                         type="object"
                         string="Autorizar"
-                        invisible="authorization_state != 'requested' or state == 'purchase'"
+                        invisible="state != 'to_approve'"
                         groups="purchase_authorization.group_purchase_authorization_manager"
                         class="oe_highlight"/>
                     <button name="button_reject"
                         type="object"
                         string="Rechazar"
-                        invisible="authorization_state != 'requested' or state == 'purchase'"
+                        invisible="state != 'to_approve'"
                         groups="purchase_authorization.group_purchase_authorization_manager"
                         class="oe_stat_button"/>
+                    <button name="button_cancel_authorization"
+                        type="object"
+                        string="Cancelar Solicitud"
+                        invisible="state != 'to_approve'"/>
                 </xpath>
 
                 <xpath expr="//notebook"
@@ -91,14 +95,53 @@
             <field name="name">purchase.order.authorization.tree.inherit</field>
             <field name="model">purchase.order</field>
             <field name="inherit_id"
-                ref="purchase.purchase_order_tree"/>
+                ref="purchase.purchase_order_kpis_tree"/>
             <field name="arch"
                 type="xml">
-                <field name="date_order"
-                    position="after">
+                <xpath expr="//field[@name='state']"
+                    position="before">
                     <field name="authorization_state"
-                        optional="show"/>
-                </field>
+                        optional="show"
+                        widget="badge"
+                        decoration-success="authorization_state == 'authorized'"
+                        decoration-warning="authorization_state == 'requested'"
+                        decoration-danger="authorization_state == 'rejected'"
+                        decoration-info="authorization_state == 'draft'"/>
+                </xpath>
+
+                <xpath expr="//field[@name='state']"
+                    position="attributes">
+                    <attribute name="decoration-warning">state == 'to_approve'</attribute>
+                    <attribute name="decoration-success">state == 'approved' or state == 'purchase'</attribute>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="purchase_order_search_inherit_authorization"
+            model="ir.ui.view">
+            <field name="name">purchase.order.authorization.search.inherit</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id"
+                ref="purchase.view_purchase_order_filter"/>
+            <field name="arch"
+                type="xml">
+                <xpath expr="//field[@name='name']"
+                    position="after">
+                    <filter name="authorization_requested"
+                        string="Por Aprobar"
+                        domain="[('state', '=', 'to_approve')]"/>
+                    <filter name="authorization_approved"
+                        string="Aprobado"
+                        domain="[('state', '=', 'approved')]"/>
+                </xpath>
+
+                <xpath expr="//group"
+                    position="inside">
+                    <filter name="authorization_state-group"
+                        string="Estado de autorización"
+                        domain="[]"
+                        context="{'group_by': 'authorization_state'}"/>
+                </xpath>
             </field>
         </record>
     </data>

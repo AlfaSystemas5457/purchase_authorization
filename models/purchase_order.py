@@ -5,10 +5,17 @@ from odoo.exceptions import UserError
 class PurchaseOrder(models.Model):
     _inherit = "purchase.order"
 
+    state = fields.Selection(
+        selection_add=[
+            ("to_approve", "Por aprobar"),
+            ("approved", "Aprobado"),
+        ]
+    )
+
     authorization_state = fields.Selection(
         [
             ("draft", "Borrador"),
-            ("requested", "Autorización Solicitada"),
+            ("requested", "Solicitado"),
             ("authorized", "Autorizado"),
             ("rejected", "Rechazado"),
         ],
@@ -33,8 +40,10 @@ class PurchaseOrder(models.Model):
 
     def button_request_authorization(self):
         self.ensure_one()
-        if self.authorization_state != "draft":
-            raise UserError("La autorización ya ha sido solicitada para esta orden.")
+        if self.state != "draft":
+            raise UserError(
+                "La orden debe estar en estado Borrador para solicitar autorización."
+            )
 
         authorizers = self.env["res.users"].search(
             [("can_authorize_purchase", "=", True)]
@@ -46,6 +55,7 @@ class PurchaseOrder(models.Model):
 
         self.write(
             {
+                "state": "to_approve",
                 "authorization_state": "requested",
                 "authorization_requested_by": self.env.user.id,
             }
@@ -66,13 +76,54 @@ class PurchaseOrder(models.Model):
             subtype_xmlid="mail.mt_comment",
         )
 
+    def button_cancel_authorization(self):
+        self.ensure_one()
+        if self.state != "to_approve":
+            raise UserError(
+                "No hay una solicitud de autorización activa para cancelar."
+            )
+
+        activities = self.activity_ids
+        if activities:
+            activities.action_done()
+
+        self.write(
+            {
+                "state": "draft",
+                "authorization_state": "draft",
+                "authorization_requested_by": False,
+            }
+        )
+
+        self.message_post(
+            body=f"Solicitud de autorización cancelada para {self.name} por {self.env.user.display_name}.",
+            message_type="notification",
+            subtype_xmlid="mail.mt_comment",
+        )
+
+    def button_cancel(self):
+        for order in self:
+            if order.state == "to_approve":
+                activities = order.activity_ids
+                if activities:
+                    activities.action_done()
+                order.write(
+                    {
+                        "state": "draft",
+                        "authorization_state": "draft",
+                        "authorization_requested_by": False,
+                    }
+                )
+        return super().button_cancel()
+
     def button_authorize(self):
         self.ensure_one()
-        if self.authorization_state != "requested":
+        if self.state != "to_approve":
             raise UserError("No se ha solicitado autorización para esta orden.")
 
         self.write(
             {
+                "state": "approved",
                 "authorization_state": "authorized",
                 "authorization_date": fields.Datetime.now(),
                 "authorized_by": self.env.user.id,
@@ -83,9 +134,6 @@ class PurchaseOrder(models.Model):
         if activities:
             activities.action_done()
 
-        if self.state in ("draft", "sent"):
-            self.button_confirm()
-
         self.message_post(
             body=f"Orden de compra {self.name} ha sido autorizada por {self.env.user.display_name}.",
             message_type="notification",
@@ -94,7 +142,7 @@ class PurchaseOrder(models.Model):
 
     def button_reject(self):
         self.ensure_one()
-        if self.authorization_state != "requested":
+        if self.state != "to_approve":
             raise UserError("No se ha solicitado autorización para esta orden.")
 
         return {
@@ -105,3 +153,13 @@ class PurchaseOrder(models.Model):
             "target": "new",
             "context": {"default_order_id": self.id},
         }
+
+    def button_confirm(self):
+        for order in self:
+            if order.state == "to_approve":
+                raise UserError(
+                    "No se puede confirmar una orden pendiente de aprobación."
+                )
+            if order.state == "approved":
+                order.write({"state": "sent"})
+        return super().button_confirm()

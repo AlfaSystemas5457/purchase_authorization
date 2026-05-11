@@ -15,11 +15,12 @@ class PurchaseAuthorizationRejectWizard(models.TransientModel):
         self.ensure_one()
         order = self.order_id
 
-        if order.authorization_state != "requested":
+        if order.state != "to_approve":
             raise UserError("La autorización ya ha sido procesada para esta orden.")
 
         order.write(
             {
+                "state": "draft",
                 "authorization_state": "rejected",
                 "rejection_reason": self.rejection_reason,
                 "authorized_by": self.env.user.id,
